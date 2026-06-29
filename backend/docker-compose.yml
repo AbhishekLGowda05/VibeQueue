@@ -1,0 +1,61 @@
+# docker-compose.yml — Local development environment
+# Run: docker compose up -d
+# This starts PostgreSQL and Redis. The FastAPI app runs locally via uvicorn.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vibequeue_postgres
+    environment:
+      POSTGRES_DB: vibequeue_db
+      POSTGRES_USER: vibequeue
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibequeue"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: vibequeue_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Celery worker (optional during dev — start separately if testing background jobs)
+  # celery_worker:
+  #   build: .
+  #   command: celery -A app.core.celery.celery_app worker --loglevel=info -Q default,catalogue,payments,notifications,playback,analytics,cleanup
+  #   env_file: .env
+  #   depends_on: [postgres, redis]
+
+  # Celery Beat scheduler (optional during dev)
+  # celery_beat:
+  #   build: .
+  #   command: celery -A app.core.celery.celery_app beat --loglevel=info
+  #   env_file: .env
+  #   depends_on: [postgres, redis]
+
+  # Flower — Celery monitoring UI (optional)
+  # flower:
+  #   build: .
+  #   command: celery -A app.core.celery.celery_app flower --port=5555
+  #   ports:
+  #     - "5555:5555"
+  #   depends_on: [redis]
+
+volumes:
+  postgres_data:
+  redis_data:
