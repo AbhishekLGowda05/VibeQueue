@@ -1,0 +1,71 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest *)",
+      "Bash(python -m backend.validation.part_validation *)",
+      "Bash(python -m backend.validation.performance_profile *)",
+      "Bash(python -m backend.geometry.step_loader *)",
+      "Bash(python -m backend.geometry.draft_analyzer *)",
+      "Bash(python -c *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(docker compose ps)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose exec *)",
+      "Bash(docker compose logs *)",
+      "Bash(curl http://localhost:8000/*)",
+      "Bash(streamlit run *)",
+      "Bash(uvicorn *)",
+      "Bash(find *)",
+      "Bash(wc *)",
+      "Bash(grep *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(cat *)",
+      "Bash(ls *)"
+    ],
+    "deny": [
+      "Edit(data/parts/**)",
+      "Write(data/parts/**)",
+      "Bash(pip install pythonocc*)",
+      "Bash(pip install pythonocc-core*)",
+      "Bash(rm -rf *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'pytest'; then echo \"$TOOL_OUTPUT\" | grep -E '(FAILED|ERROR|PASSED|failed|error|warnings summary|short test summary)' || true; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'pip install pythonocc'; then echo '{\"decision\": \"block\", \"reason\": \"pythonocc-core must be installed via conda/micromamba, not pip. Use: conda install -c conda-forge pythonocc-core=7.7.2\"}' && exit 2; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'data/parts/.*\\.stp'; then echo '{\"decision\": \"block\", \"reason\": \"STEP fixture files in data/parts/ are read-only inputs. Do not modify them.\"}' && exit 2; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
