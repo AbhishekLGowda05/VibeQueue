@@ -3,13 +3,16 @@ app/core/config.py
 
 Central configuration — all settings read from environment variables.
 Uses pydantic-settings so every value is validated at startup.
-If a required value is missing, the app refuses to start (fail-fast).
+
+Core infrastructure (DATABASE_URL, REDIS_URL, JWT) is required.
+Third-party API credentials are optional — the app starts without them
+so local development and testing work out of the box.
 """
 
 from functools import lru_cache
 from typing import List
 
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +30,7 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     APP_WORKERS: int = 1
-    SECRET_KEY: str
+    SECRET_KEY: str = "CHANGE-ME-in-production"
 
     # ── Database ─────────────────────────────────────────────────────
     DATABASE_URL: str
@@ -47,41 +50,61 @@ class Settings(BaseSettings):
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # ── Celery ───────────────────────────────────────────────────────
-    CELERY_BROKER_URL: str
-    CELERY_RESULT_BACKEND: str
+    CELERY_BROKER_URL: str = ""
+    CELERY_RESULT_BACKEND: str = ""
 
-    # ── Razorpay ─────────────────────────────────────────────────────
-    RAZORPAY_KEY_ID: str
-    RAZORPAY_KEY_SECRET: str
-    RAZORPAY_WEBHOOK_SECRET: str
+    @field_validator("CELERY_BROKER_URL", mode="before")
+    @classmethod
+    def default_celery_broker(cls, v, info):
+        if v:
+            return v
+        redis_url = info.data.get("REDIS_URL", "redis://localhost:6379")
+        return f"{redis_url}/2"
 
-    # ── YouTube ──────────────────────────────────────────────────────
-    YOUTUBE_API_KEY: str
+    @field_validator("CELERY_RESULT_BACKEND", mode="before")
+    @classmethod
+    def default_celery_backend(cls, v, info):
+        if v:
+            return v
+        redis_url = info.data.get("REDIS_URL", "redis://localhost:6379")
+        return f"{redis_url}/2"
+
+    # ── Razorpay (optional — leave empty for local dev) ──────────────
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    RAZORPAY_WEBHOOK_SECRET: str = ""
+
+    # ── YouTube (optional — leave empty for local dev) ───────────────
+    YOUTUBE_API_KEY: str = ""
     YOUTUBE_QUOTA_LIMIT: int = 9500
 
-    # ── WhatsApp ─────────────────────────────────────────────────────
-    WHATSAPP_API_TOKEN: str
-    WHATSAPP_PHONE_NUMBER_ID: str
-    WHATSAPP_BUSINESS_ACCOUNT_ID: str
+    # ── WhatsApp (optional — leave empty for local dev) ──────────────
+    WHATSAPP_API_TOKEN: str = ""
+    WHATSAPP_PHONE_NUMBER_ID: str = ""
+    WHATSAPP_BUSINESS_ACCOUNT_ID: str = ""
 
-    # ── Cloudflare R2 ────────────────────────────────────────────────
-    R2_ACCOUNT_ID: str
-    R2_ACCESS_KEY_ID: str
-    R2_SECRET_ACCESS_KEY: str
+    # ── Cloudflare R2 (optional — leave empty for local dev) ─────────
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
     R2_BUCKET_NAME: str = "vibequeue-assets"
-    R2_PUBLIC_URL: str
+    R2_PUBLIC_URL: str = ""
 
     # ── Sentry ───────────────────────────────────────────────────────
     SENTRY_DSN: str = ""
     SENTRY_TRACES_SAMPLE_RATE: float = 0.1
 
     # ── CORS ─────────────────────────────────────────────────────────
-    CORS_ORIGINS: str = "http://localhost:5173"
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v: str) -> List[str]:
-        return [origin.strip() for origin in v.split(",")]
+    def parse_cors_origins(cls, v):
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",")]
+        return v
 
     # ── Business Logic ───────────────────────────────────────────────
     DEFAULT_QUEUE_SIZE_LIMIT: int = 8

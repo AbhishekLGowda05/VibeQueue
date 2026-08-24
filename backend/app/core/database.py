@@ -18,12 +18,18 @@ from app.core.config import settings
 
 
 # ── Engine ────────────────────────────────────────────────────────────────────
+# Disable asyncpg prepared statement cache when using PgBouncer (transaction pooler)
+_connect_args = {}
+if "pooler.supabase.com" in settings.DATABASE_URL:
+    _connect_args = {"statement_cache_size": 0, "prepared_statement_cache_size": 0}
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     pool_size=settings.DATABASE_POOL_SIZE,
     max_overflow=settings.DATABASE_MAX_OVERFLOW,
     pool_pre_ping=True,          # Reconnect on stale connections
     echo=settings.is_development, # Log SQL in dev, never in prod
+    connect_args=_connect_args,
 )
 
 # ── Session Factory ───────────────────────────────────────────────────────────

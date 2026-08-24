@@ -26,14 +26,27 @@
 - [x] Ambient Display — QR scan CTA
 - [x] PWA manifest
 - [x] Production build verification (zero TS errors)
+- [x] Alembic database migrations — generated and applied to Supabase (11 tables)
+- [x] Backend config hardened — third-party credentials now optional, CORS type fixed
+- [x] Seed data — 2 venues, 2 owners, 62 songs loaded into Supabase
+- [x] Health endpoint verified — database + Redis both OK
+- [x] Celery worker + beat verified running locally
+- [x] pytest suite — 42 passed, 0 failed
+- [x] Smoke test — full core loop verified (staff login → open table → guest join → search → request → boost → queue reorder → boost tiers)
+- [x] Frontend build — zero TS errors, dev server boots, landing page renders
 
 ## Pending — Infrastructure
-- [ ] Alembic database migrations (generate from existing ORM models)
-- [ ] Environment variable configuration for production
+- [ ] Environment variable configuration for production (real secrets, not dev placeholders)
 - [ ] Vercel deployment configuration
-- [ ] Supabase project setup and RLS policies
+- [ ] Supabase RLS policies (currently no row-level security)
 - [ ] PWA service worker for offline support
 - [ ] PWA icons (icon-192.png, icon-512.png)
+
+## Pending — Third-Party Integrations (need real API keys)
+- [ ] Razorpay payment integration (need key from https://dashboard.razorpay.com)
+- [ ] YouTube Data API v3 integration (need key from Google Cloud Console)
+- [ ] WhatsApp Cloud API integration (need credentials from Meta Business)
+- [ ] Cloudflare R2 asset storage (need credentials from Cloudflare dashboard)
 
 ## Pending — Integration Testing
 - [ ] End-to-end test: guest join → request → boost → billing flow

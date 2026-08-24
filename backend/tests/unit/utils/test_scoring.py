@@ -64,17 +64,22 @@ class TestSortQueueEntries:
         assert sorted_entries[0].boost_total_paise == 3500
 
     def test_tie_broken_by_older_timestamp(self):
-        """Equal boost totals: older request goes first."""
+        """When scores are equal, older request goes first.
+        Score = boost + 1000/minutes. To get equal scores at different ages:
+        Entry A: 2400 paise, 5 min → 2400 + 200 = 2600
+        Entry B: 2500 paise, 10 min → 2500 + 100 = 2600
+        """
+        now = datetime.now(timezone.utc)
 
         class FakeEntry:
             def __init__(self, paise, minutes_ago):
                 self.boost_total_paise = paise
-                self.created_at = make_time(minutes_ago)
+                self.created_at = now - timedelta(minutes=minutes_ago)
                 self.score = 0.0
 
         entries = [
-            FakeEntry(paise=2500, minutes_ago=2),   # newer — should lose tie
+            FakeEntry(paise=2400, minutes_ago=5),   # newer — should lose tie
             FakeEntry(paise=2500, minutes_ago=10),  # older — should win tie
         ]
-        sorted_entries = sort_queue_entries(entries)
+        sorted_entries = sort_queue_entries(entries, now=now)
         assert sorted_entries[0].created_at < sorted_entries[1].created_at

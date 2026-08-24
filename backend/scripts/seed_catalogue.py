@@ -107,19 +107,32 @@ async def seed_venue_catalogue(venue_id: str, packs: list[str], mode: str = "B")
 
 
 async def main():
+    from app.core.database import AsyncSessionLocal
+    from app.models.venue import Venue
+    from sqlalchemy import select
+
     print("Seeding catalogues for pilot venues...")
-    print("Note: venue IDs must match those created by seed_db.py")
-    print("Update these UUIDs after running seed_db.py\n")
+
+    # Look up venues by slug (no hardcoded UUIDs)
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Venue).where(Venue.slug == "koramangala-social"))
+        venue1 = result.scalar_one_or_none()
+        result = await db.execute(select(Venue).where(Venue.slug == "indiranagar-hammered"))
+        venue2 = result.scalar_one_or_none()
+
+    if not venue1 or not venue2:
+        print("❌ Venues not found. Run seed_db.py first.")
+        return
 
     # Venue 1: Koramangala Social — Mode B, Bollywood + English heavy
     await seed_venue_catalogue(
-        venue_id="00000000-0000-0000-0000-000000000001",  # Replace after seed_db.py
+        venue_id=str(venue1.id),
         packs=["bollywood", "punjabi", "english_pop", "chill_dinner"],
     )
 
     # Venue 2: Indiranagar Hammered — Mode A, all genres
     await seed_venue_catalogue(
-        venue_id="00000000-0000-0000-0000-000000000002",  # Replace after seed_db.py
+        venue_id=str(venue2.id),
         packs=["bollywood", "punjabi", "english_pop"],
     )
 

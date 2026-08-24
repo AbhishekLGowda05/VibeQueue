@@ -6,22 +6,52 @@
 
 | Component | Status | Notes |
 |---|---|---|
-| Backend (FastAPI) | Complete | All API routes, services, models, workers built |
-| Frontend — Project Setup | Complete | Next.js 16 + TypeScript + Tailwind CSS |
-| Frontend — Core Infra | Complete | API client, types, auth, WebSocket, Zustand stores |
-| Frontend — Guest Interface | Complete | Join, queue view, boost sheet, billing, my songs |
-| Frontend — Venue Dashboard | Complete | Login, now playing, queue, tables, alerts, mode toggle |
-| Frontend — YouTube Playback | Complete | IFrame Player, WebSocket listener, event reporting, keep-alive |
-| Frontend — Ambient Display | Complete | Now playing, next up, progress bar, dark theme, QR CTA |
-| Database Migrations | Pending | Alembic versions not yet generated |
-| Deployment | Pending | Vercel + Supabase config |
+| Backend (FastAPI) | Verified Locally | All routes, services, models, workers — health/smoke test pass |
+| Database Migrations | Verified Locally | Alembic initial migration applied to Supabase (11 tables) |
+| Seed Data | Verified Locally | 2 venues, 2 owners, 62 songs loaded |
+| Backend Config | Verified Locally | Third-party creds optional, CORS fixed, PgBouncer compat |
+| Test Suite | Verified Locally | 42 passed, 0 failed |
+| Smoke Test | Verified Locally | Full core loop: login → table → join → search → request → boost → queue |
+| Celery Workers | Verified Locally | Worker + beat both start and connect to Redis |
+| Frontend — Project Setup | Verified Locally | Next.js 16 + TypeScript + Tailwind CSS, build succeeds |
+| Frontend — Core Infra | Written | API client, types, auth, WebSocket, Zustand stores |
+| Frontend — Guest Interface | Written | Join, queue view, boost sheet, billing, my songs |
+| Frontend — Venue Dashboard | Written | Login, now playing, queue, tables, alerts, mode toggle |
+| Frontend — YouTube Playback | Written | IFrame Player, WebSocket listener, event reporting, keep-alive |
+| Frontend — Ambient Display | Written | Now playing, next up, progress bar, dark theme, QR CTA |
+| Razorpay Payments | Written | Backend routes exist, no API key — untested |
+| YouTube Data API | Written | Backend integration exists, no API key — untested |
+| WhatsApp Notifications | Written | Backend integration exists, no API key — untested |
+| Cloudflare R2 Storage | Written | Backend integration exists, no credentials — untested |
+| Supabase RLS | Not Started | No row-level security policies configured |
+| Deployment | Not Started | Vercel + Supabase production config |
+
+### Status Legend
+
+- **Verified Locally** — code runs, tests pass, or smoke test confirms behavior against real local/Supabase infrastructure
+- **Written** — code exists and compiles/builds, but has not been tested against real services or end-to-end
+- **Not Started** — no code or configuration written yet
 
 ## Architecture
 
-- **Backend:** FastAPI + PostgreSQL + Redis + Celery (complete)
+- **Backend:** FastAPI + PostgreSQL (Supabase) + Redis + Celery
 - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS + Zustand + Supabase Realtime
+- **Database:** Supabase PostgreSQL via session mode pooler (port 5432) — asyncpg compatible
 - **Real-time:** Supabase WebSocket subscriptions for live queue updates
-- **Payments:** Razorpay (backend integrated, frontend billing flow complete)
+- **Payments:** Razorpay (backend integrated, frontend billing flow written, not tested)
+
+## Bugs Fixed During Local Verification (2026-08-23)
+
+| File | Issue | Fix |
+|---|---|---|
+| `backend/app/core/config.py` | All third-party creds required at import time | Made optional with `""` defaults |
+| `backend/app/core/config.py` | `CORS_ORIGINS` typed as `str`, validator returns `List[str]` | Changed to `List[str]` |
+| `backend/app/api/v1/routes/health.py` | `JSONResponse` imported after use | Moved import to top |
+| `backend/alembic/env.py` | Async asyncpg engine incompatible with PgBouncer | Rewrote to sync psycopg2 |
+| `backend/app/core/database.py` | No PgBouncer connect_args for asyncpg | Added `statement_cache_size=0` |
+| `backend/app/core/logging.py` | `add_logger_name` crashes PrintLogger | Removed from processor chain |
+| `backend/scripts/seed_catalogue.py` | Hardcoded UUIDs don't match generated venues | Changed to slug-based lookup |
+| `backend/tests/unit/utils/test_scoring.py` | Tie-breaker test had wrong math | Fixed with compensating boost values |
 
 ## Four Interfaces — Routes
 
@@ -34,7 +64,9 @@
 
 - TypeScript: passing (zero errors)
 - Production build: successful
-- All routes rendering correctly
+- All routes generating correctly
+- pytest: 42 passed, 0 failed
+- Smoke test: all steps passed
 
 ## File Structure
 

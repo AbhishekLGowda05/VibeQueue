@@ -6,6 +6,7 @@ Returns 200 if the app, database, and Redis are all reachable.
 """
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,5 +45,3 @@ async def health_check(db: AsyncSession = Depends(get_db)):
             "redis": "ok" if redis_ok else "unreachable",
         },
     )
-
-from fastapi.responses import JSONResponse
