@@ -1,30 +1,38 @@
 # VibeQueue — Implementation Status
 
-**Last Updated:** 2026-08-23
+**Last Updated:** 2026-08-24
 
 ## Overall Progress
 
 | Component | Status | Notes |
 |---|---|---|
 | Backend (FastAPI) | Verified Locally | All routes, services, models, workers — health/smoke test pass |
-| Database Migrations | Verified Locally | Alembic initial migration applied to Supabase (11 tables) |
-| Seed Data | Verified Locally | 2 venues, 2 owners, 62 songs loaded |
-| Backend Config | Verified Locally | Third-party creds optional, CORS fixed, PgBouncer compat |
-| Test Suite | Verified Locally | 42 passed, 0 failed |
+| Database Migrations | Verified Against Cloud | 2 Alembic migrations applied to real Supabase (11 tables + RLS + Realtime) |
+| Seed Data | Verified Against Cloud | 2 venues, 2 owners, 62 songs (46 disabled after YouTube validation) |
+| Backend Config | Verified Against Cloud | Real JWT secret, PgBouncer compat, rate limits |
+| Test Suite | Verified Locally | 42 passed, 0 failed (after all changes) |
 | Smoke Test | Verified Locally | Full core loop: login → table → join → search → request → boost → queue |
 | Celery Workers | Verified Locally | Worker + beat both start and connect to Redis |
-| Frontend — Project Setup | Verified Locally | Next.js 16 + TypeScript + Tailwind CSS, build succeeds |
-| Frontend — Core Infra | Written | API client, types, auth, WebSocket, Zustand stores |
-| Frontend — Guest Interface | Written | Join, queue view, boost sheet, billing, my songs |
-| Frontend — Venue Dashboard | Written | Login, now playing, queue, tables, alerts, mode toggle |
+| Frontend — Project Setup | Verified Locally | Next.js 16 + TypeScript + Tailwind CSS, build succeeds (zero errors) |
+| Frontend — Core Infra | Written | API client, types, auth, WebSocket (table names fixed), Zustand stores |
+| Frontend — Guest Interface | Written | Join, queue view, boost sheet, billing, my songs + Framer Motion |
+| Frontend — Venue Dashboard | Written | Login, now playing, queue, tables, mode toggle |
 | Frontend — YouTube Playback | Written | IFrame Player, WebSocket listener, event reporting, keep-alive |
-| Frontend — Ambient Display | Written | Now playing, next up, progress bar, dark theme, QR CTA |
-| Razorpay Payments | Written | Backend routes exist, no API key — untested |
-| YouTube Data API | Written | Backend integration exists, no API key — untested |
+| Frontend — Ambient Display | Written | Now playing, next up, progress bar, dark theme, QR CTA + Framer Motion |
+| Frontend — Error Boundaries | Written | Next.js 16 error.tsx on all 4 routes + global-error.tsx |
+| Frontend — PWA Icons | Written | icon-192.png and icon-512.png generated |
+| Supabase RLS | Verified Against Cloud | 10 tables RLS-enabled, 5 anon SELECT policies, zero write access for anon |
+| Supabase Realtime | Verified Against Cloud | 5 tables in publication, frontend subscriptions use correct table names |
+| Spend Cap Concurrency | Written | Atomic Lua script replaces TOCTOU race condition |
+| Webhook Idempotency | Written | Application guard + unique partial DB index |
+| Rate Limiting (join) | Written | 5 req/min/IP on /sessions/join endpoint |
+| JWT Startup Guard | Written | Refuses production boot with dev placeholder secret |
+| Framer Motion Animations | Written | Queue reorder, boost sheet slide, ambient crossfade |
+| Razorpay Payments | Written | Backend routes exist, test keys configured — needs sandbox test |
+| YouTube Data API | Verified Against Cloud | 16/62 songs embeddable, 46 disabled. Catalogue needs refresh. |
 | WhatsApp Notifications | Written | Backend integration exists, no API key — untested |
 | Cloudflare R2 Storage | Written | Backend integration exists, no credentials — untested |
-| Supabase RLS | Not Started | No row-level security policies configured |
-| Deployment | Not Started | Vercel + Supabase production config |
+| Deployment | Documented | DEPLOY.md created (Vercel + Railway commands). Not deployed. |
 
 ### Status Legend
 

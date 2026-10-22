@@ -4,6 +4,79 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2026-08-24] — Cloud Migration, Security Hardening & Production Readiness
+
+Moved from "verified locally" to "verified against real cloud Supabase" and hardened for two-venue Bangalore pilot with real paying customers.
+
+### Cloud Supabase Migration (Verified Against Cloud)
+- Applied Alembic migration `a1b2c3d4e5f6` to real Supabase cloud project (ap-southeast-1)
+- Confirmed all 11 tables exist in cloud with `alembic upgrade head`
+- Seed data already present from prior session: 2 venues, 2 owners, 62 songs
+- Enabled Realtime on 5 specific tables: `queue_entries`, `table_sessions`, `boosts`, `playback_commands`, `playback_events`
+- NOT enabled on: `users`, `venues`, `songs`, `payments`, `audit_logs`
+
+### Row-Level Security (Verified Against Cloud)
+- Enabled RLS on all 10 data tables (not `alembic_version`)
+- Created 5 SELECT-only policies for `anon` role on Realtime tables
+- Zero policies on sensitive tables (`users`, `payments`, `audit_logs`, `venues`, `songs`) — anon has no access
+- Architecture: frontend (anon key) gets read-only Realtime; all writes go through FastAPI backend (postgres user, bypasses RLS)
+- Confirmed `service_role` key is never referenced in any frontend file
+
+### Critical Bug Fix: Realtime Table Names (Code Fix)
+- **Bug:** `frontend/src/lib/supabase.ts` subscribed to wrong table names — `queue` instead of `queue_entries`, `sessions` instead of `table_sessions`, and a nonexistent `alerts` table
+- **Impact:** All live-update features (queue reordering, billing triggers, ambient display) were silently broken
+- **Fix:** Corrected table names, removed `subscribeToAlerts` (no alerts table exists in schema), cleaned up DashboardView.tsx import
+
+### Spend Cap Race Condition Fix (Code Fix)
+- **Bug:** `queue_engine.py:152-178` had a TOCTOU race — Redis GET then check then INCRBY as three separate operations. Two concurrent boosts could both pass the cap check.
+- **Fix:** Replaced with atomic Lua script (`SPEND_CAP_SCRIPT` in `redis.py`) that does check-and-increment in a single Redis `eval()` call. If cap would be exceeded, returns -1 without modifying the value.
+- **Impact:** Prevents a table from exceeding its spend cap (₹150) under any concurrency pattern. This is real money.
+
+### Webhook Idempotency (Code Fix)
+- **Bug:** `payments.py` webhook handler had no check for duplicate `razorpay_payment_id`. Razorpay retries webhooks at-least-once.
+- **Fix:** Added application-level idempotency guard (checks if payment already has `razorpay_payment_id` set before processing) + database-level unique partial index on `payments.razorpay_payment_id`
+- **Impact:** Duplicate webhook deliveries now return `{"status": "already_processed"}` safely
+
+### Production Hardening
+- **JWT Secret:** Replaced dev placeholder `local-jwt-secret-key-change-in-production` with real 48-byte cryptographic secret. Added startup guard in `events.py` that refuses to boot in production mode with the placeholder.
+- **Rate Limiting on /sessions/join:** Added `rate_limit_join` dependency (5 attempts/min/IP). Brute-forcing 6-digit table codes is now impractical (~7,200 attempts/day vs 1M keyspace).
+- **Error Boundaries:** Created 6 Next.js 16 error boundary files using the correct `retry` prop (not `reset`):
+  - `app/error.tsx` — root
+  - `app/global-error.tsx` — catches root layout errors
+  - `app/join/[venue]/error.tsx` — guest interface
+  - `app/display/[venue]/error.tsx` — ambient display (auto-retries after 10s)
+  - `app/dashboard/error.tsx` — staff dashboard
+  - `app/playback/[venue]/error.tsx` — playback tab (auto-retries after 5s)
+- **PWA Manifest:** Added `manifest: "/manifest.json"` to `layout.tsx` metadata (was missing)
+- **Error Disclosure:** Verified `error_handler.py` already returns generic 500s with no stack traces — no change needed
+
+### Framer Motion Animations (Written)
+- **QueueCard.tsx:** `motion.div` with `layout` + `layoutId` for smooth reorder animation on boost. Spring transition (stiffness: 500, damping: 35). Entry/exit animations.
+- **QueueView.tsx:** Wrapped queue list with `<AnimatePresence mode="popLayout">` so exiting items animate out while remaining items fill gaps. Wrapped BoostSheet with `<AnimatePresence>`.
+- **BoostSheet.tsx:** Replaced CSS `animate-slide-up` with Framer Motion spring slide-up (`initial={{ y: "100%" }}`).
+- **AmbientDisplay.tsx:** Now Playing uses `<AnimatePresence mode="wait">` with crossfade (opacity + scale). Next Up list uses `layout` animation for smooth reordering.
+
+### PWA Icons (Written)
+- Generated `icon-192.png` and `icon-512.png` — violet (#8b5cf6) background with white "VQ" text
+- `manifest.json` already referenced these paths — now they exist
+
+### YouTube Catalogue Validation (Verified Against Cloud)
+- Created `scripts/validate_catalogue.py` using existing `check_videos_embeddable()` service
+- Ran against real YouTube Data API with the configured API key
+- **Result:** 16/62 songs passed, 46 songs disabled (not embeddable or removed from YouTube)
+- Seed catalogue needs refreshing with valid video IDs before pilot launch
+
+### Documentation
+- Created `DEPLOY.md` with copy-pasteable commands for Vercel (frontend) + Railway (backend + Celery)
+- Includes Razorpay webhook setup, sandbox test procedure, CORS update checklist, post-deploy verification
+
+### Build Verification
+- **pytest:** 42 passed, 0 failed (unchanged)
+- **Frontend build:** zero TypeScript errors, all routes generating correctly
+- **Alembic:** 2 migrations applied (initial schema + RLS/Realtime/hardening)
+
+---
+
 ## [2026-08-23] — Local Verification Session
 
 First time the full stack has been executed against real infrastructure. Moved from "code complete, never run" to "verified working locally."

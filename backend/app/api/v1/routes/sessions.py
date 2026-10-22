@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies.auth import get_current_staff
+from app.api.v1.dependencies.rate_limit import rate_limit_join
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, generate_table_code
@@ -58,6 +59,7 @@ async def guest_join(
     payload: GuestJoinRequest,
     venue_slug: str,
     db: AsyncSession = Depends(get_db),
+    _rate_limit=Depends(rate_limit_join),
 ):
     """
     Guest enters table code after scanning QR.

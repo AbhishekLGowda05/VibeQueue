@@ -22,3 +22,12 @@ async def rate_limit_guest(request: Request, limit: int = 30, window: int = 60):
         await redis_client.expire(key, window)
     if count > limit:
         raise CooldownActiveError(retry_after_seconds=window)
+
+
+async def rate_limit_join(request: Request):
+    """
+    Tight rate limit for table code join attempts: 5 per minute per IP.
+    A 6-digit code has 1M combinations — this makes brute-force impractical
+    (~7,200 attempts/day vs 1M keyspace).
+    """
+    await rate_limit_guest(request, limit=5, window=60)

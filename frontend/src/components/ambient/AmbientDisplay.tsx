@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Music, ChevronUp, QrCode } from "lucide-react";
 import { api } from "@/lib/api";
 import { subscribeToQueue, subscribeToPlaybackEvents } from "@/lib/supabase";
@@ -99,52 +100,67 @@ export default function AmbientDisplay({ venueSlug }: { venueSlug: string }) {
       )}
 
       {/* Now Playing */}
-      {nowPlaying ? (
-        <div className="text-center mb-16 max-w-4xl">
-          {/* Label */}
-          <div className="flex items-center justify-center gap-2 text-violet-400 text-sm font-bold uppercase tracking-[0.3em] mb-6">
-            <Music size={16} />
-            Now Playing
-          </div>
+      <AnimatePresence mode="wait">
+        {nowPlaying ? (
+          <motion.div
+            key={nowPlaying.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            className="text-center mb-16 max-w-4xl"
+          >
+            {/* Label */}
+            <div className="flex items-center justify-center gap-2 text-violet-400 text-sm font-bold uppercase tracking-[0.3em] mb-6">
+              <Music size={16} />
+              Now Playing
+            </div>
 
-          {/* Progress Bar */}
-          <div className="w-full max-w-2xl mx-auto h-1 bg-neutral-800 rounded-full mb-8 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 ease-linear"
-              style={{ width: `${songProgress}%` }}
-            />
-          </div>
+            {/* Progress Bar */}
+            <div className="w-full max-w-2xl mx-auto h-1 bg-neutral-800 rounded-full mb-8 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-1000 ease-linear"
+                style={{ width: `${songProgress}%` }}
+              />
+            </div>
 
-          {/* Song Title */}
-          <h1 className="text-6xl font-bold mb-3 bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent leading-tight">
-            {nowPlaying.song_title}
-          </h1>
+            {/* Song Title */}
+            <h1 className="text-6xl font-bold mb-3 bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent leading-tight">
+              {nowPlaying.song_title}
+            </h1>
 
-          {/* Artist */}
-          <p className="text-2xl text-neutral-400 mb-6">
-            {nowPlaying.song_artist}
-          </p>
+            {/* Artist */}
+            <p className="text-2xl text-neutral-400 mb-6">
+              {nowPlaying.song_artist}
+            </p>
 
-          {/* Divider */}
-          <div className="w-24 h-px bg-neutral-800 mx-auto mb-6" />
+            {/* Divider */}
+            <div className="w-24 h-px bg-neutral-800 mx-auto mb-6" />
 
-          {/* Table Attribution */}
-          <p className="text-xl text-neutral-500">
-            Requested by{" "}
-            <span className="text-violet-400 font-semibold">
-              TABLE {nowPlaying.table_number}
-            </span>
-          </p>
-        </div>
-      ) : (
-        <div className="text-center mb-16">
-          <div className="inline-flex p-6 rounded-3xl bg-violet-500/5 mb-6">
-            <Music size={48} className="text-violet-400/50" />
-          </div>
-          <h1 className="text-4xl font-bold text-neutral-600">VibeQueue</h1>
-          <p className="text-neutral-700 mt-2">Waiting for songs...</p>
-        </div>
-      )}
+            {/* Table Attribution */}
+            <p className="text-xl text-neutral-500">
+              Requested by{" "}
+              <span className="text-violet-400 font-semibold">
+                TABLE {nowPlaying.table_number}
+              </span>
+            </p>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex p-6 rounded-3xl bg-violet-500/5 mb-6">
+              <Music size={48} className="text-violet-400/50" />
+            </div>
+            <h1 className="text-4xl font-bold text-neutral-600">VibeQueue</h1>
+            <p className="text-neutral-700 mt-2">Waiting for songs...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Divider */}
       <div className="w-full max-w-2xl h-px bg-neutral-900 mb-12" />
@@ -156,11 +172,17 @@ export default function AmbientDisplay({ venueSlug }: { venueSlug: string }) {
             Next Up
           </h2>
 
-          <div className="space-y-4">
+          <AnimatePresence mode="popLayout">
             {nextUp.map((entry) => (
-              <div
+              <motion.div
                 key={entry.id}
-                className="flex items-center gap-6 px-6 py-4 rounded-2xl bg-neutral-900/50 border border-neutral-800/30"
+                layout
+                layoutId={`ambient-${entry.id}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="flex items-center gap-6 px-6 py-4 rounded-2xl bg-neutral-900/50 border border-neutral-800/30 mb-4"
               >
                 <div className="text-2xl font-bold text-neutral-700 w-8 text-center">
                   #{entry.position}
@@ -180,9 +202,9 @@ export default function AmbientDisplay({ venueSlug }: { venueSlug: string }) {
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </AnimatePresence>
         </div>
       )}
 

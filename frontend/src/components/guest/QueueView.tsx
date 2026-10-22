@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { AnimatePresence } from "framer-motion";
 import { Search, ChevronUp, X } from "lucide-react";
 import { useGuestStore } from "@/stores/guest-store";
 import { api } from "@/lib/api";
@@ -168,7 +169,7 @@ export default function QueueView() {
             <p className="text-sm">Be the first to request a song!</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <AnimatePresence mode="popLayout">
             {activeQueue.map((entry) => (
               <QueueCard
                 key={entry.id}
@@ -177,7 +178,7 @@ export default function QueueView() {
                 onBoost={() => setSelectedSong(entry)}
               />
             ))}
-          </div>
+          </AnimatePresence>
         )}
       </div>
 
@@ -254,12 +255,14 @@ export default function QueueView() {
       )}
 
       {/* Boost Sheet */}
-      {selectedSong && (
-        <BoostSheet
-          entry={selectedSong}
-          onClose={() => setSelectedSong(null)}
-        />
-      )}
+      <AnimatePresence>
+        {selectedSong && (
+          <BoostSheet
+            entry={selectedSong}
+            onClose={() => setSelectedSong(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

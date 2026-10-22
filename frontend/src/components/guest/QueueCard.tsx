@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import type { QueueEntry } from "@/types";
 import { timeAgo } from "@/lib/utils";
@@ -14,7 +15,13 @@ export default function QueueCard({ entry, isOwnTable, onBoost }: QueueCardProps
   const canBoost = entry.status === "active";
 
   return (
-    <div
+    <motion.div
+      layout
+      layoutId={entry.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -100 }}
+      transition={{ type: "spring", stiffness: 500, damping: 35 }}
       className={`queue-card flex items-center gap-3 p-3 rounded-xl ${
         isOwnTable
           ? "bg-violet-500/10 border border-violet-500/20"
@@ -54,6 +61,6 @@ export default function QueueCard({ entry, isOwnTable, onBoost }: QueueCardProps
           </button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

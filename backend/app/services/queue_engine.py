@@ -25,7 +25,7 @@ from datetime import datetime, timedelta, timezone
 import structlog
 
 from app.core.config import settings
-from app.core.redis import RedisKeys, redis_queue_client
+from app.core.redis import RedisKeys, redis_queue_client, SPEND_CAP_SCRIPT
 from app.exceptions.queue import (
     CooldownActiveError,
     QueueSongNotFoundError,
@@ -148,12 +148,23 @@ class QueueEngine:
         if entry.position > 8:
             raise WaitingPoolBoostError()
 
-        # ── Spend cap check ───────────────────────────────────────────
+        # ── Atomic spend cap check-and-increment (Lua script) ─────────
+        # Prevents TOCTOU race: two concurrent boosts can no longer both
+        # pass the cap check before either commits the increment.
         spend_key = RedisKeys.spend_total(str(venue_id), str(session_id))
-        current_spend = int(await redis_queue_client.get(spend_key) or 0)
         venue_cap = settings.DEFAULT_SPEND_CAP_PAISE  # TODO: load from venue config
 
-        if current_spend + amount_paise > venue_cap:
+        result = await redis_queue_client.eval(
+            SPEND_CAP_SCRIPT,
+            1,
+            spend_key,
+            str(amount_paise),
+            str(venue_cap),
+            str(settings.TABLE_CODE_EXPIRY_SECONDS),
+        )
+
+        if result == -1:
+            current_spend = int(await redis_queue_client.get(spend_key) or 0)
             raise SpendCapExceededError(
                 current_spend_paise=current_spend,
                 cap_paise=venue_cap,
@@ -172,12 +183,6 @@ class QueueEngine:
         await self.queue_repo.update(
             entry,
             boost_total_paise=entry.boost_total_paise + amount_paise,
-        )
-
-        # ── Update spend total in Redis ───────────────────────────────
-        await redis_queue_client.incrby(spend_key, amount_paise)
-        await redis_queue_client.expire(
-            spend_key, settings.TABLE_CODE_EXPIRY_SECONDS
         )
 
         await self._recalculate_and_broadcast(venue_id)

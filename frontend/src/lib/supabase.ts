@@ -19,7 +19,7 @@ export function subscribeToQueue(
       {
         event: "*",
         schema: "public",
-        table: "queue",
+        table: "queue_entries",
         filter: `venue_id=eq.${venueId}`,
       },
       (payload) => onUpdate(payload as unknown as Record<string, unknown>)
@@ -67,26 +67,6 @@ export function subscribeToPlaybackEvents(
     .subscribe();
 }
 
-// Subscribe to alerts (used by Dashboard)
-export function subscribeToAlerts(
-  venueId: string,
-  onAlert: (payload: Record<string, unknown>) => void
-) {
-  return supabase
-    .channel(`alerts:${venueId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "alerts",
-        filter: `venue_id=eq.${venueId}`,
-      },
-      (payload) => onAlert(payload as unknown as Record<string, unknown>)
-    )
-    .subscribe();
-}
-
 // Subscribe to session state changes (billing trigger for guest)
 export function subscribeToSession(
   sessionId: string,
@@ -99,7 +79,7 @@ export function subscribeToSession(
       {
         event: "UPDATE",
         schema: "public",
-        table: "sessions",
+        table: "table_sessions",
         filter: `id=eq.${sessionId}`,
       },
       (payload) => onUpdate(payload as unknown as Record<string, unknown>)

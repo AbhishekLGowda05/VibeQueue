@@ -10,6 +10,7 @@ const geist = Geist({
 export const metadata: Metadata = {
   title: "VibeQueue",
   description: "Request songs. Boost the vibe. Own the night.",
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

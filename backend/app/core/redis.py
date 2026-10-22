@@ -74,6 +74,21 @@ class RedisKeys:
         return f"vq:{venue_id}:playback_cmd"
 
 
+# ── Lua scripts — executed atomically inside Redis ───────────────────────────
+SPEND_CAP_SCRIPT = """
+local current = tonumber(redis.call('GET', KEYS[1]) or '0')
+local increment = tonumber(ARGV[1])
+local cap = tonumber(ARGV[2])
+local ttl = tonumber(ARGV[3])
+if current + increment > cap then
+    return -1
+end
+redis.call('INCRBY', KEYS[1], increment)
+redis.call('EXPIRE', KEYS[1], ttl)
+return current + increment
+"""
+
+
 # ── Health check helper ───────────────────────────────────────────────────────
 async def ping_redis() -> bool:
     try:

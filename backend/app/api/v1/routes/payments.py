@@ -89,9 +89,18 @@ async def verify_payment(request: Request, db: AsyncSession = Depends(get_db)):
     data = json.loads(body)
     payment_entity = data.get("payload", {}).get("payment", {}).get("entity", {})
 
-    payment_service = PaymentService(payment_repo=PaymentRepository(db), db=db)
+    # ── Idempotency guard — prevent duplicate webhook processing ──────
+    # Razorpay sends webhooks at-least-once; without this check, a retry
+    # could double-confirm boosts or corrupt payment state.
+    razorpay_order_id = payment_entity.get("order_id")
+    payment_repo = PaymentRepository(db)
+    existing = await payment_repo.get_by_razorpay_order(razorpay_order_id)
+    if existing and existing.razorpay_payment_id:
+        return {"status": "already_processed"}
+
+    payment_service = PaymentService(payment_repo=payment_repo, db=db)
     await payment_service.verify_and_confirm(
-        razorpay_order_id=payment_entity.get("order_id"),
+        razorpay_order_id=razorpay_order_id,
         razorpay_payment_id=payment_entity.get("id"),
         razorpay_signature=received_signature,
     )

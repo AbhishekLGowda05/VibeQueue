@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useDashboardStore } from "@/stores/dashboard-store";
-import { subscribeToQueue, subscribeToAlerts, subscribeToPlaybackEvents } from "@/lib/supabase";
+import { subscribeToQueue, subscribeToPlaybackEvents } from "@/lib/supabase";
 import type { QueueEntry, Alert } from "@/types";
 import ActiveTables from "./ActiveTables";
 import OpenTableDialog from "./OpenTableDialog";
@@ -61,21 +61,15 @@ export default function DashboardView() {
       loadDashboard();
     });
 
-    const alertChannel = subscribeToAlerts(venueId, (payload) => {
-      const data = (payload as { new?: Alert }).new;
-      if (data) addAlert(data);
-    });
-
     const playbackChannel = subscribeToPlaybackEvents(venueId, () => {
       loadDashboard();
     });
 
     return () => {
       queueChannel.unsubscribe();
-      alertChannel.unsubscribe();
       playbackChannel.unsubscribe();
     };
-  }, [venueId, loadDashboard, addAlert]);
+  }, [venueId, loadDashboard]);
 
   return (
     <div className="min-h-screen flex flex-col">

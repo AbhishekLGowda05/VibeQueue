@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { X, ChevronUp } from "lucide-react";
 import { useGuestStore } from "@/stores/guest-store";
 import type { QueueEntry, BoostTier } from "@/types";
@@ -34,7 +35,13 @@ export default function BoostSheet({ entry, onClose }: BoostSheetProps) {
       />
 
       {/* Sheet */}
-      <div className="relative w-full max-w-lg bg-neutral-900 rounded-t-3xl border-t border-neutral-800 p-6 pb-10 animate-slide-up">
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="relative w-full max-w-lg bg-neutral-900 rounded-t-3xl border-t border-neutral-800 p-6 pb-10"
+      >
         {/* Handle */}
         <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-4" />
 
@@ -99,7 +106,7 @@ export default function BoostSheet({ entry, onClose }: BoostSheetProps) {
             ₹{spendRemaining} remaining tonight &middot; You only pay if the song plays
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

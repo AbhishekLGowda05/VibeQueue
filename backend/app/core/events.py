@@ -30,6 +30,13 @@ async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("vibequeue.startup", env=settings.APP_ENV)
 
+    # Refuse to start in production with the dev placeholder JWT secret
+    if settings.is_production and "change-in-production" in settings.JWT_SECRET_KEY:
+        raise RuntimeError(
+            "FATAL: JWT_SECRET_KEY is still the dev placeholder — "
+            "generate a real secret before starting in production"
+        )
+
     # Sentry (only in non-dev)
     if settings.SENTRY_DSN and not settings.is_development:
         sentry_sdk.init(

@@ -449,3 +449,25 @@ The second commit is larger by lines than the first, despite covering only the f
 
 *VibeQueue Audit Report · Generated 2026-08-23*  
 *Covers session: commit `02fc7a2` → `aa6e315` on branch `main`*
+
+---
+
+## Addendum: 2026-08-24 — Cloud Migration & Hardening Session
+
+The gaps identified in Section 8 ("Known Gaps") have been addressed in the 2026-08-24 session:
+
+| Gap (from this report) | Resolution | Reference |
+|---|---|---|
+| No error boundaries | 6 error boundary files added (all 4 routes + root + global), using Next.js 16 `retry` prop. Ambient/playback auto-retry on timer. | `frontend/src/app/error.tsx` + 5 more |
+| Framer Motion not wired | Wired into QueueCard (layout reorder), QueueView (AnimatePresence), BoostSheet (spring slide-up), AmbientDisplay (crossfade + list animation). | 4 component files modified |
+| No Supabase RLS | RLS enabled on all 10 data tables. 5 SELECT-only anon policies on Realtime tables. Zero anon access to sensitive tables. | Alembic migration `a1b2c3d4e5f6` |
+| Realtime table names wrong | Fixed: `queue` → `queue_entries`, `sessions` → `table_sessions`, removed nonexistent `alerts`. | `frontend/src/lib/supabase.ts` |
+
+Additional security hardening not anticipated in this report:
+- Spend cap TOCTOU race condition fixed with atomic Redis Lua script
+- Webhook idempotency guard + unique partial DB index
+- JWT startup guard (refuses production boot with dev placeholder)
+- Rate limiting on `/sessions/join` (5 req/min/IP)
+- PWA manifest link added to layout
+
+Full details: `docs/progress_24082026.md` and `CHANGELOG.md` entry for 2026-08-24.

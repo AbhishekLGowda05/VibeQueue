@@ -36,29 +36,32 @@
 - [x] Frontend build — zero TS errors, dev server boots, landing page renders
 
 ## Pending — Infrastructure
-- [ ] Environment variable configuration for production (real secrets, not dev placeholders)
-- [ ] Vercel deployment configuration
-- [ ] Supabase RLS policies (currently no row-level security)
+- [x] Environment variable configuration for production (real JWT secret generated)
+- [ ] Vercel deployment (DEPLOY.md written, not deployed — need `vercel login`)
+- [x] Supabase RLS policies (10 tables RLS-enabled, 5 anon SELECT policies)
 - [ ] PWA service worker for offline support
-- [ ] PWA icons (icon-192.png, icon-512.png)
+- [x] PWA icons (icon-192.png, icon-512.png generated)
+- [x] Supabase Realtime enabled on 5 tables
+- [ ] CORS_ORIGINS update with real Vercel URL (after deployment)
 
-## Pending — Third-Party Integrations (need real API keys)
-- [ ] Razorpay payment integration (need key from https://dashboard.razorpay.com)
-- [ ] YouTube Data API v3 integration (need key from Google Cloud Console)
-- [ ] WhatsApp Cloud API integration (need credentials from Meta Business)
-- [ ] Cloudflare R2 asset storage (need credentials from Cloudflare dashboard)
+## Pending — Third-Party Integrations
+- [ ] Razorpay sandbox test (keys configured, DEPLOY.md has test procedure, needs ngrok + manual test)
+- [x] YouTube Data API v3 catalogue validation (ran — 16/62 songs embeddable, 46 disabled)
+- [ ] Refresh seed catalogue with working YouTube video IDs (only 16 of 62 are valid)
+- [ ] WhatsApp Cloud API integration (not on pilot critical path)
+- [ ] Cloudflare R2 asset storage (not on pilot critical path)
 
 ## Pending — Integration Testing
-- [ ] End-to-end test: guest join → request → boost → billing flow
+- [ ] End-to-end test: guest join → request → boost → billing flow (against cloud Supabase)
 - [ ] End-to-end test: dashboard open table → guest joins → song plays
-- [ ] WebSocket real-time sync verification across all 4 interfaces
-- [ ] YouTube IFrame playback test with real YouTube Premium account
-- [ ] Razorpay payment integration test
+- [ ] WebSocket real-time sync verification across all 4 interfaces (against cloud)
+- [ ] YouTube IFrame playback test with real YouTube Premium account (manual step)
+- [ ] Razorpay payment integration test (sandbox — manual step, see DEPLOY.md)
 
 ## Pending — Polish
-- [ ] Framer Motion animations for queue reordering
+- [x] Framer Motion animations for queue reordering
 - [ ] Loading skeletons for initial data fetch
-- [ ] Error boundary components
+- [x] Error boundary components (Next.js 16 error.tsx on all routes)
 - [ ] Toast notification system
 - [ ] Responsive breakpoints fine-tuning for dashboard on smaller laptops
 - [ ] Ambient Display font size optimization for different TV sizes
